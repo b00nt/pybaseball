@@ -32,6 +32,11 @@ def get_table(soup: BeautifulSoup, team: str) -> pd.DataFrame:
     headings = [th.get_text() for th in table.find("tr").find_all("th")]
     headings = headings[1:] # the "gm#" heading doesn't have a <td> element
     headings[3] = "Home_Away"
+
+    # add boxscore link
+    headings.insert(2, "Boxscore")
+    base_url = "https://www.baseball-reference.com"
+
     data.append(headings)
     table_body = table.find('tbody')
     rows = table_body.find_all('tr')
@@ -39,6 +44,11 @@ def get_table(soup: BeautifulSoup, team: str) -> pd.DataFrame:
         row = rows[row_index]
         try:
             cols = row.find_all('td')
+
+            # Extract boxscore href
+            boxscore_td = row.find('td', {'data-stat': 'boxscore'})
+            boxscore_link = base_url + boxscore_td.find('a')['href'] if boxscore_td and boxscore_td.find('a') else None
+
             #links = row.find_all('a')
             if cols[1].text == "":
                 cols[1].string = team # some of the older season don't seem to have team abbreviation on their tables
@@ -60,12 +70,22 @@ def get_table(soup: BeautifulSoup, team: str) -> pd.DataFrame:
                 cols[17].string = "Unknown" # Unknown if attendance data is missing
 
             cols = [ele.text.strip() for ele in cols]
+
+            # boxscore link
+            cols.insert(2, boxscore_link)
+
             data.append([ele for ele in cols if ele])
         except:
             # two cases will break the above: games that haven't happened yet, and BR's redundant mid-table headers
             # if future games, grab the scheduling info. Otherwise do nothing. 
             if len(cols) > 1:
                 cols = [ele.text.strip() for ele in cols][0:5]
+
+                # boxscore link
+                boxscore_td = row.find('td', {'data-stat': 'boxscore'})
+                boxscore_link = base_url + boxscore_td.find('a')['href'] if boxscore_td and boxscore_td.find('a') else None
+                cols.insert(2, boxscore_link)
+
                 data.append([ele for ele in cols if ele])
     #convert to pandas dataframe. make first row the table's column names and reindex.
     df = pd.DataFrame(data)
