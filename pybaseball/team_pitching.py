@@ -40,7 +40,7 @@ def team_pitching_bref(team: str, start_season: int, end_season: Optional[int]=N
         response = session.get(stats_url)
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        table = soup.find_all('table', {'id': 'team_pitching'})[0]
+        table = soup.find_all('table', {'id': 'players_standard_pitching'})[0]
 
         if headings is None:
             headings = [row.text.strip() for row in table.find_all('th')[1:34]]
